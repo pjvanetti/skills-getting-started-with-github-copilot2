@@ -20,12 +20,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        const participantsList = details.participants.length
+          ? details.participants.map(p => `<li>${p} <span class="delete-icon" data-activity="${name}" data-email="${p}" title="Unregister">&#x1f5d1;</span></li>`).join("")
+          : "<li class='no-participants'>No participants yet</li>";
+
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants-section">
+            <strong>Participants:</strong>
+            <ul class="participants-list">
+              ${participantsList}
+            </ul>
+          </div>
         `;
+
+        // Add click handlers for delete icons
+        activityCard.querySelectorAll(".delete-icon").forEach(icon => {
+          icon.addEventListener("click", async () => {
+            const activityName = icon.dataset.activity;
+            const email = icon.dataset.email;
+            try {
+              const res = await fetch(
+                `/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`,
+                { method: "DELETE" }
+              );
+              if (res.ok) {
+                // Refresh the activities list
+                activitiesList.innerHTML = "";
+                activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
+                fetchActivities();
+              } else {
+                const err = await res.json();
+                alert(err.detail || "Failed to unregister");
+              }
+            } catch (e) {
+              console.error("Error unregistering:", e);
+            }
+          });
+        });
 
         activitiesList.appendChild(activityCard);
 
